@@ -4,14 +4,14 @@ import zipfile
 import tarfile
 import aiohttp
 import aiosqlite
-from aiogram import Bot, Dispatcher, F, types
+import booru
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import InputFile
-from booru import Booru
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -101,8 +101,10 @@ async def get_archive(message: types.Message):
 
 # Функция для загрузки изображений с booru
 async def fetch_from_booru(tag, site='danbooru'):
-    booru_client = Booru(site)
-    posts = await booru_client.get_posts(tags=tag)
+    booru_client = booru.Danbooru() if site == 'danbooru' else booru.Booru(site)
+    response = await booru_client.search(query=tag)
+    posts = booru.resolve(response)
+    
     for post in posts:
         file_url = post.get('file_url')
         if file_url:
