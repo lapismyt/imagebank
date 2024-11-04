@@ -124,7 +124,10 @@ async def fetch_booru_images(message: types.Message):
     await fetch_from_booru(tag, site)
     await message.answer(f"Изображения с {site} по тегу {tag} добавлены в базу.")
 
+async def main():
+    await init_db()
+    await dp.start_polling(bot)
+
 if __name__ == '__main__':
     import asyncio
-    asyncio.run(init_db())
-    dp.start_polling(bot)
+    asyncio.run(main())
