@@ -1,0 +1,5 @@
+aiogram==3.x
+aiosqlite
+booru
+aiohttp
+python-dotenv
