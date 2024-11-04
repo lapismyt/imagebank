@@ -62,7 +62,7 @@ async def save_image(file_path, tags):
 @dp.message(Command("add_image"), F.photo)
 async def add_image(message: types.Message, state: FSMContext):
     await message.answer("Введите теги для изображения в формате booru (через пробел):")
-    await AddImage.waiting_for_tags.set()
+    await state.set_state(AddImage.waiting_for_tags)
     await message.photo[-1].download(f"{IMAGE_FOLDER}/{message.photo[-1].file_id}.jpg")
     await state.update_data(file_path=f"{IMAGE_FOLDER}/{message.photo[-1].file_id}.jpg")
 
