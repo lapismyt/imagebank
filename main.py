@@ -41,7 +41,8 @@ async def fetch_from_booru(message: types.Message):
         return
 
     booru_name = args[1]
-    tags = args[2]
+    page = int(args[2])
+    tags = ' '.join(args[3:])
     
     if booru_name.lower() in boorus.keys():
         booru = boorus[booru_name.lower()]()
@@ -49,7 +50,7 @@ async def fetch_from_booru(message: types.Message):
         await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
         return
     
-    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1] if ' -- ' in tags else '', limit=1000)
+    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1] if ' -- ' in tags else '', limit=128, page=page)
     resps = orjson.loads(results)
     images = []
     for resp in resps:
