@@ -53,13 +53,17 @@ async def fetch_from_booru(message: types.Message):
     resps = orjson.loads(results)
     images = []
     for resp in resps:
+        rtags = ' '.join(resp["tags"])
         img_url = resp["file_url"]
         file_name = os.path.basename(img_url)
         file_path = os.path.join('images', file_name)
+        with open(os.path.splitext(file_path)[0] + '.txt'), 'w') as f:
+            f.write(rtags)
         async with aiohttp.ClientSession() as session:
             async with session.get(img_url) as resp:
                 with open(file_path, 'wb') as f:
                     f.write(await resp.read())
+                
         await add_image(file_path, tags)
         images.append(img_url)
     
@@ -83,6 +87,7 @@ async def download_images(message: types.Message):
     with zipfile.ZipFile(archive_path, 'w') as archive:
         for image_path, in images:
             archive.write(image_path, os.path.basename(image_path))
+            archive.write(os.path.splitext(os.path.basename(image_path))[0] + '.txt', os.path.splitext(image_path)[0] + '.txt')
     
     await add_archive(tags, archive_path)
     archive_url = f"{URL_PATH}{message.chat.id}.zip"
