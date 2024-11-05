@@ -13,11 +13,11 @@ dp = Dispatcher()
 # Инициализация базы данных
 asyncio.run(init_db())
 
-@dp.message(commands=["start"])
+@dp.message(F.text == "/start")
 async def start_handler(message: types.Message):
     await message.reply("Привет! Отправь мне картинку и добавь к ней теги в формате booru.")
 
-@dp.message(content_types=types.ContentType.PHOTO)
+@dp.message(F.photo)
 async def handle_image(message: types.Message):
     await message.reply("Введите теги для этой картинки:")
     await dp.storage.set_data(chat=message.chat.id, data={"image_id": message.photo[-1].file_id})
@@ -41,7 +41,7 @@ async def handle_tags(message: types.Message):
     await message.reply(f"Картинка сохранена с тегами: {tags}")
     await dp.storage.delete_data(chat=message.chat.id)
 
-@dp.message(commands=["download"])
+@dp.message(F.text.startswith("/download"))
 async def download_images(message: types.Message):
     tags = message.get_args()
     images = await get_images_by_tags(tags)
@@ -64,7 +64,7 @@ async def download_images(message: types.Message):
     archive_url = f"{URL_PATH}{message.chat.id}.zip"
     await message.reply(f"Архив создан: {archive_url}")
 
-@dp.message(commands=["fetch"])
+@dp.message(F.text.startswith("/fetch"))
 async def fetch_from_booru(message: types.Message):
     args = message.get_args().split()
     booru_name = args[0]
