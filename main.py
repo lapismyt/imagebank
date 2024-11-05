@@ -87,7 +87,7 @@ async def download_images(message: types.Message):
     with zipfile.ZipFile(archive_path, 'w') as archive:
         for image_path, in images:
             archive.write(image_path, os.path.basename(image_path))
-            archive.write(os.path.splitext(os.path.basename(image_path))[0] + '.txt', os.path.splitext(image_path)[0] + '.txt')
+            archive.write(os.path.splitext(image_path)[0] + '.txt', os.path.splitext(os.path.basename(image_path))[0] + '.txt')
     
     await add_archive(tags, archive_path)
     archive_url = f"{URL_PATH}{message.chat.id}.zip"
