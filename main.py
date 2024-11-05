@@ -3,12 +3,25 @@ import zipfile
 import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import FSInputFile
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.storage.memory import MemoryStorage
 from config import TOKEN, IMAGE_PATH, URL_PATH
 from database import init_db, add_image, get_images_by_tags, check_archive_exists, add_archive
-from booru import Danbooru, Rule34
+from booru import Danbooru, Rule34, Safebooru, Gelbooru, Lolibooru, Yandere, Realbooru
+import aiohttp
 
 bot = Bot(token=TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(storage=MemoryStorage())
+
+boorus = {
+    'danbooru': Danbooru,
+    'rule34': Rule34,
+    'safebooru': Safebooru,
+    'lolibooru': Lolibooru,
+    'gelbooru': Gelbooru,
+    'realbooru': Realbooru,
+    'yandere': Yandere
+}
 
 # Инициализация базы данных
 asyncio.run(init_db())
@@ -18,14 +31,14 @@ async def start_handler(message: types.Message):
     await message.reply("Привет! Отправь мне картинку и добавь к ней теги в формате booru.")
 
 @dp.message(F.photo)
-async def handle_image(message: types.Message):
+async def handle_image(message: types.Message, state: FSMContext):
     await message.reply("Введите теги для этой картинки:")
-    await dp.storage.set_data(chat=message.chat.id, data={"image_id": message.photo[-1].file_id})
+    await state.update_data(image_id=message.photo[-1].file_id)
 
 @dp.message(F.text)
-async def handle_tags(message: types.Message):
+async def handle_tags(message: types.Message, state: FSMContext):
     tags = message.text
-    data = await dp.storage.get_data(chat=message.chat.id)
+    data = await state.get_data()
     image_id = data.get("image_id")
     
     if not image_id:
@@ -39,11 +52,11 @@ async def handle_tags(message: types.Message):
     
     await add_image(file_path, tags)
     await message.reply(f"Картинка сохранена с тегами: {tags}")
-    await dp.storage.delete_data(chat=message.chat.id)
+    await state.clear()
 
 @dp.message(F.text.startswith("/download"))
 async def download_images(message: types.Message):
-    tags = message.get_args()
+    tags = message.text[len("/download "):]  # Получение аргументов после команды
     images = await get_images_by_tags(tags)
     
     if not images:
@@ -66,16 +79,18 @@ async def download_images(message: types.Message):
 
 @dp.message(F.text.startswith("/fetch"))
 async def fetch_from_booru(message: types.Message):
-    args = message.get_args().split()
-    booru_name = args[0]
-    tags = args[1]
+    args = message.text.split()
+    if len(args) < 3:
+        await message.reply("Используйте: /fetch <booru> <теги>")
+        return
+
+    booru_name = args[1]
+    tags = args[2]
     
-    if booru_name.lower() == "danbooru":
-        booru = Danbooru()
-    elif booru_name.lower() == "rule34":
-        booru = Rule34()
+    if booru_name.lower() in boorus.keys():
+        booru = boorus[booru_name.lower()]()
     else:
-        await message.reply("Поддерживаемые booru: danbooru, rule34.")
+        await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
         return
     
     results = await booru.search(query=tags)
@@ -92,5 +107,9 @@ async def fetch_from_booru(message: types.Message):
     
     await message.reply(f"Загружено {len(images)} изображений с тегами {tags}.")
 
+async def main():
+    await init_db()
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
-    dp.run_polling(bot)
+    asyncio.run(main())
