@@ -3,3 +3,4 @@ aiosqlite
 booru
 aiohttp
 python-dotenv
+orjson
