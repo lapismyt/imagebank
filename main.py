@@ -35,6 +35,36 @@ async def handle_image(message: types.Message, state: FSMContext):
     await message.reply("Введите теги для этой картинки:")
     await state.update_data(image_id=message.photo[-1].file_id)
 
+@dp.message(F.text.startswith("/fetch"))
+async def fetch_from_booru(message: types.Message):
+    args = message.text.split()
+    if len(args) < 3:
+        await message.reply("Используйте: /fetch <booru> <теги>")
+        return
+
+    booru_name = args[1]
+    tags = args[2]
+    
+    if booru_name.lower() in boorus.keys():
+        booru = boorus[booru_name.lower()]()
+    else:
+        await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
+        return
+    
+    results = await booru.search(query=tags)
+    images = booru.resolve(results)
+    
+    for img_url in images:
+        file_name = os.path.basename(img_url)
+        file_path = os.path.join(IMAGE_PATH, file_name)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(img_url) as resp:
+                with open(file_path, 'wb') as f:
+                    f.write(await resp.read())
+        await add_image(file_path, tags)
+    
+    await message.reply(f"Загружено {len(images)} изображений с тегами {tags}.")
+
 @dp.message(F.text)
 async def handle_tags(message: types.Message, state: FSMContext):
     tags = message.text
@@ -76,36 +106,7 @@ async def download_images(message: types.Message):
     await add_archive(tags, archive_path)
     archive_url = f"{URL_PATH}{message.chat.id}.zip"
     await message.reply(f"Архив создан: {archive_url}")
-
-@dp.message(F.text.startswith("/fetch"))
-async def fetch_from_booru(message: types.Message):
-    args = message.text.split()
-    if len(args) < 3:
-        await message.reply("Используйте: /fetch <booru> <теги>")
-        return
-
-    booru_name = args[1]
-    tags = args[2]
     
-    if booru_name.lower() in boorus.keys():
-        booru = boorus[booru_name.lower()]()
-    else:
-        await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
-        return
-    
-    results = await booru.search(query=tags)
-    images = booru.resolve(results)
-    
-    for img_url in images:
-        file_name = os.path.basename(img_url)
-        file_path = os.path.join(IMAGE_PATH, file_name)
-        async with aiohttp.ClientSession() as session:
-            async with session.get(img_url) as resp:
-                with open(file_path, 'wb') as f:
-                    f.write(await resp.read())
-        await add_image(file_path, tags)
-    
-    await message.reply(f"Загружено {len(images)} изображений с тегами {tags}.")
 
 async def main():
     await init_db()
