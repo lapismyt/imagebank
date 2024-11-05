@@ -54,7 +54,7 @@ async def fetch_from_booru(message: types.Message):
     
     results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1] if ' -- ' in tags else '')
     resps = orjson.loads(results)
-    
+    images = []
     for resp in resps:
         img_url = resp["file_url"]
         file_name = os.path.basename(img_url)
@@ -64,12 +64,13 @@ async def fetch_from_booru(message: types.Message):
                 with open(file_path, 'wb') as f:
                     f.write(await resp.read())
         await add_image(file_path, tags)
+        images.append(img_url)
     
     await message.reply(f"Загружено {len(images)} изображений с тегами {tags}.")
 
 @dp.message(F.text.startswith("/download"))
 async def download_images(message: types.Message):
-    tags = message.text[len("/download "):]  # Получение аргументов после команды
+    tags = message.text[len("/download "):]
     images = await get_images_by_tags(tags)
     
     if not images:
