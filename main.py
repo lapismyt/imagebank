@@ -24,9 +24,6 @@ boorus = {
     'yandere': Yandere
 }
 
-# Инициализация базы данных
-asyncio.run(init_db())
-
 @dp.message(F.text == "/start")
 async def start_handler(message: types.Message):
     await message.reply("Привет! Отправь мне картинку и добавь к ней теги в формате booru.")
@@ -52,13 +49,13 @@ async def fetch_from_booru(message: types.Message):
         await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
         return
     
-    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1] if ' -- ' in tags else '')
+    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1] if ' -- ' in tags else '', limit=1000)
     resps = orjson.loads(results)
     images = []
     for resp in resps:
         img_url = resp["file_url"]
         file_name = os.path.basename(img_url)
-        file_path = os.path.join(IMAGE_PATH, file_name)
+        file_path = os.path.join('images', file_name)
         async with aiohttp.ClientSession() as session:
             async with session.get(img_url) as resp:
                 with open(file_path, 'wb') as f:
