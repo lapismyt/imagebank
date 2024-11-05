@@ -57,7 +57,7 @@ async def fetch_from_booru(message: types.Message):
         img_url = resp["file_url"]
         file_name = os.path.basename(img_url)
         file_path = os.path.join('images', file_name)
-        with open(os.path.splitext(file_path)[0] + '.txt'), 'w') as f:
+        with open(os.path.splitext(file_path)[0] + '.txt', 'w') as f:
             f.write(rtags)
         async with aiohttp.ClientSession() as session:
             async with session.get(img_url) as resp:
