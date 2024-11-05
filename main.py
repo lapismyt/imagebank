@@ -9,6 +9,7 @@ from config import TOKEN, IMAGE_PATH, URL_PATH
 from database import init_db, add_image, get_images_by_tags, check_archive_exists, add_archive
 from booru import Danbooru, Rule34, Safebooru, Gelbooru, Lolibooru, Yandere, Realbooru
 import aiohttp
+import orjson
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
@@ -51,10 +52,11 @@ async def fetch_from_booru(message: types.Message):
         await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
         return
     
-    results = await booru.search(query=tags)
-    images = booru.resolve(results)
+    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1])
+    resps = orjson.loads(results)
     
-    for img_url in images:
+    for resp in resps:
+        img_url = resp["file_url"]
         file_name = os.path.basename(img_url)
         file_path = os.path.join(IMAGE_PATH, file_name)
         async with aiohttp.ClientSession() as session:
