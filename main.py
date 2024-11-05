@@ -52,7 +52,7 @@ async def fetch_from_booru(message: types.Message):
         await message.reply("Поддерживаемые booru: danbooru, rule34, safebooru, gelbooru, lolibooru, realbooru, yandere.")
         return
     
-    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1])
+    results = await booru.search(query=tags.split(' -- ')[0], block=tags.split(' -- ')[1] if ' -- ' in tags else '')
     resps = orjson.loads(results)
     
     for resp in resps:
@@ -66,25 +66,6 @@ async def fetch_from_booru(message: types.Message):
         await add_image(file_path, tags)
     
     await message.reply(f"Загружено {len(images)} изображений с тегами {tags}.")
-
-@dp.message(F.text)
-async def handle_tags(message: types.Message, state: FSMContext):
-    tags = message.text
-    data = await state.get_data()
-    image_id = data.get("image_id")
-    
-    if not image_id:
-        await message.reply("Отправьте картинку, затем укажите теги.")
-        return
-    
-    # Скачивание файла
-    file = await bot.get_file(image_id)
-    file_path = os.path.join(IMAGE_PATH, f"{image_id}.jpg")
-    await bot.download_file(file.file_path, file_path)
-    
-    await add_image(file_path, tags)
-    await message.reply(f"Картинка сохранена с тегами: {tags}")
-    await state.clear()
 
 @dp.message(F.text.startswith("/download"))
 async def download_images(message: types.Message):
@@ -108,7 +89,27 @@ async def download_images(message: types.Message):
     await add_archive(tags, archive_path)
     archive_url = f"{URL_PATH}{message.chat.id}.zip"
     await message.reply(f"Архив создан: {archive_url}")
+
+@dp.message(F.text)
+async def handle_tags(message: types.Message, state: FSMContext):
+    tags = message.text
+    data = await state.get_data()
+    image_id = data.get("image_id")
     
+    if not image_id:
+        await message.reply("Отправьте картинку, затем укажите теги.")
+        return
+    
+    # Скачивание файла
+    file = await bot.get_file(image_id)
+    file_path = os.path.join(IMAGE_PATH, f"{image_id}.jpg")
+    await bot.download_file(file.file_path, file_path)
+    
+    await add_image(file_path, tags)
+    await message.reply(f"Картинка сохранена с тегами: {tags}")
+    await state.clear()
+
+
 
 async def main():
     await init_db()
